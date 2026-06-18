@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Smart Traffic & Accident Monitoring System</title>
+    
+    <!-- CDNs: FontAwesome and Chart.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom styling -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Header bar -->
+    <header>
+        <div class="header-container">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>AI Smart Traffic & Accident Monitoring</h1>
+                    <span>Smart City Control Hub v3.4</span>
+                </div>
+            </div>
+            
+            <div class="header-status-panel">
+                <div class="header-stat-item">
+                    <span class="hud-label">Server Connection:</span>
+                    <span class="indicator active" id="server-status-badge"></span>
+                    <span class="hud-val" id="server-status">ONLINE</span>
+                </div>
+                <div class="header-stat-item">
+                    <span class="hud-label">Firebase DB:</span>
+                    <span class="indicator simulated" id="db-status-badge"></span>
+                    <span class="hud-val" id="db-status">Simulated</span>
+                </div>
+                <div class="header-stat-item" style="display: none;">
+                    <!-- Quiet helper to display DB detail message -->
+                    <span id="db-msg"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Grid Dashboard layout -->
+    <main class="dashboard-grid">
+        
+        <!-- Top Analytics Ribbon -->
+        <div class="col-12">
+            <div class="analytics-grid">
+                
+                <div class="analytics-card cyan">
+                    <div class="analytics-icon">
+                        <i class="fa-solid fa-cars"></i>
+                    </div>
+                    <div class="analytics-info">
+                        <div class="analytics-label">Active Flow Rate</div>
+                        <div class="analytics-value" id="hud-total-vehicles">38</div>
+                    </div>
+                </div>
+
+                <div class="analytics-card magenta">
+                    <div class="analytics-icon">
+                        <i class="fa-solid fa-gauge-high"></i>
+                    </div>
+                    <div class="analytics-info">
+                        <div class="analytics-label">Avg Traffic Load</div>
+                        <div class="analytics-value" id="hud-avg-density">42%</div>
+                    </div>
+                </div>
+
+                <div class="analytics-card green">
+                    <div class="analytics-icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="analytics-info">
+                        <div class="analytics-label">Congestion Status</div>
+                        <span class="badge-neon green" id="hud-density-category">Medium</span>
+                    </div>
+                </div>
+
+                <div class="analytics-card yellow">
+                    <div class="analytics-icon">
+                        <i class="fa-solid fa-moon"></i>
+                    </div>
+                    <div class="analytics-info">
+                        <div class="analytics-label">Night Automation</div>
+                        <span class="hud-val" id="night-mode-status" style="font-size: 0.9rem; font-weight: bold; color: var(--neon-yellow);">Inactive (Day Ops)</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Left Dashboard Columns: Traffic Simulation and Analytics -->
+        <div class="col-8">
+            
+            <!-- 1. Real-time Intersection Map Canvas -->
+            <div class="cyber-card" style="margin-bottom: 24px;">
+                <div class="cyber-card-header">
+                    <h2 class="cyber-card-title"><i class="fa-solid fa-satellite-dish"></i> Intersection Alpha - Live Visual Flow</h2>
+                    <span class="badge-neon cyan">Smart City Grid</span>
+                </div>
+                <div class="cyber-card-body" style="padding: 12px; position: relative;">
+                    
+                    <div class="intersection-wrapper">
+                        <!-- Simulated 2D Vector Canvas mapping -->
+                        <canvas id="sim-canvas" class="high-tech-grid-map"></canvas>
+                        
+                        <!-- 4-Way Traffic Signal Overlay boxes -->
+                        <div class="traffic-signal-box signal-lane-1">
+                            <div class="traffic-light-lens red active"></div>
+                            <div class="traffic-light-lens yellow"></div>
+                            <div class="traffic-light-lens green"></div>
+                        </div>
+                        <div class="traffic-signal-box signal-lane-2">
+                            <div class="traffic-light-lens red"></div>
+                            <div class="traffic-light-lens yellow"></div>
+                            <div class="traffic-light-lens green active"></div>
+                        </div>
+                        <div class="traffic-signal-box signal-lane-3">
+                            <div class="traffic-light-lens red active"></div>
+                            <div class="traffic-light-lens yellow"></div>
+                            <div class="traffic-light-lens green"></div>
+                        </div>
+                        <div class="traffic-signal-box signal-lane-4">
+                            <div class="traffic-light-lens red active"></div>
+                            <div class="traffic-light-lens yellow"></div>
+                            <div class="traffic-light-lens green"></div>
+                        </div>
+                        
+                        <!-- Countdown HUD overlays -->
+                        <div class="countdown-box countdown-1" id="time-cnt-1">00</div>
+                        <div class="countdown-box countdown-2" id="time-cnt-2">00</div>
+                        <div class="countdown-box countdown-3" id="time-cnt-3">00</div>
+                        <div class="countdown-box countdown-4" id="time-cnt-4">00</div>
+                        
+                        <!-- Live lane stats overlay tags -->
+                        <div class="lane-stats-overlay lane-overlay-1" id="lane-hud-cnt-1">0% Density (0 Vehicles)</div>
+                        <div class="lane-stats-overlay lane-overlay-2" id="lane-hud-cnt-2">0% Density (0 Vehicles)</div>
+                        <div class="lane-stats-overlay lane-overlay-3" id="lane-hud-cnt-3">0% Density (0 Vehicles)</div>
+                        <div class="lane-stats-overlay lane-overlay-4" id="lane-hud-cnt-4">0% Density (0 Vehicles)</div>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <!-- 2. Signal and Corridor HUD -->
+            <div class="cyber-card" style="margin-bottom: 24px;">
+                <div class="cyber-card-header">
+                    <h2 class="cyber-card-title"><i class="fa-solid fa-traffic-light"></i> Smart Timing Status Matrix</h2>
+                    <span class="badge-neon yellow" id="algo-state-text">Dynamic Timer Active</span>
+                </div>
+                <div class="cyber-card-body" style="padding: 16px;">
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; text-align: center;">
+                        <div class="result-pill">
+                            <div class="result-pill-label">Lane 1 (North)</div>
+                            <div class="result-pill-value" style="margin-top: 4px;"><span class="badge-neon red" id="hud-status-lane-1">Red</span></div>
+                        </div>
+                        <div class="result-pill">
+                            <div class="result-pill-label">Lane 2 (South)</div>
+                            <div class="result-pill-value" style="margin-top: 4px;"><span class="badge-neon green" id="hud-status-lane-2">Green</span></div>
+                        </div>
+                        <div class="result-pill">
+                            <div class="result-pill-label">Lane 3 (East)</div>
+                            <div class="result-pill-value" style="margin-top: 4px;"><span class="badge-neon red" id="hud-status-lane-3">Red</span></div>
+                        </div>
+                        <div class="result-pill">
+                            <div class="result-pill-label">Lane 4 (West)</div>
+                            <div class="result-pill-value" style="margin-top: 4px;"><span class="badge-neon red" id="hud-status-lane-4">Red</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Chart.js Graphical Analytics -->
+            <div class="col-12" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; padding: 0;">
+                <div class="cyber-card">
+                    <div class="cyber-card-header">
+                        <h3 class="cyber-card-title"><i class="fa-solid fa-chart-line"></i> Real-time Corridor Densities</h3>
+                        <span class="badge-neon cyan">Live Metrics</span>
+                    </div>
+                    <div class="cyber-card-body" style="height: 220px;">
+                        <canvas id="chart-live-density"></canvas>
+                    </div>
+                </div>
+
+                <div class="cyber-card">
+                    <div class="cyber-card-header">
+                        <h3 class="cyber-card-title"><i class="fa-solid fa-chart-column"></i> Vehicle Type Distribution</h3>
+                        <span class="badge-neon magenta">Composition</span>
+                    </div>
+                    <div class="cyber-card-body" style="height: 220px;">
+                        <canvas id="chart-vehicle-classes"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Dashboard Columns: AI Detections, Controls, IoT & Database consoles -->
+        <div class="col-4">
+            
+            <!-- 1. AI Image Vehicle Detector -->
+            <div class="cyber-card" style="margin-bottom: 24px;">
+                <div class="cyber-card-header">
+                    <h2 class="cyber-card-title"><i class="fa-solid fa-eye"></i> AI Camera Vehicle Recognition</h2>
+                    <span class="badge-neon cyan" id="detect-scene-title">Scene Mode: Active</span>
+                </div>
+                <div class="cyber-card-body">
+                    
+                    <!-- Drag and drop zone -->
+                    <div class="upload-drag-zone" id="image-upload-zone">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span style="font-size: 0.85rem; font-weight: bold;">Drag & Drop Traffic Photo / Click to Upload</span>
+                        <span style="font-size: 0.7rem; color: #8c7fa7;">Supported formats: JPEG, PNG</span>
+                        <input type="file" id="file-uploader" style="display: none;" accept="image/*">
+                    </div>
+
+                    <!-- Detection Visual Canvas Box -->
+                    <div class="detection-display-container">
+                        <canvas id="preview-detection-canvas" class="detection-canvas-layer"></canvas>
+                    </div>
+
+                    <!-- Detection stats outcomes -->
+                    <div class="detection-results-grid">
+                        <div class="result-pill" style="border-color: var(--neon-cyan);">
+                            <div class="result-pill-label">Detected</div>
+                            <div class="result-pill-value" id="det-cnt-total" style="color: var(--neon-cyan);">00</div>
+                        </div>
+                        <div class="result-pill">
+                            <div class="result-pill-label">Cars</div>
+                            <div class="result-pill-value" id="det-cnt-car">00</div>
+                        </div>
+                        <div class="result-pill">
+                            <div class="result-pill-label">Bikes</div>
+                            <div class="result-pill-value" id="det-cnt-bike">00</div>
+                        </div>
+                        <div class="result-pill">
+                            <div class="result-pill-label">Truck/Bus</div>
+                            <div class="result-pill-value" id="det-cnt-truck">00</div>
+                            <span id="det-cnt-bus" style="display: none;">00</span> <!-- Silent tracker -->
+                        </div>
+                    </div>
+
+                    <!-- Quick preloaded demo scenes selection -->
+                    <div style="margin-top: 16px; display: flex; gap: 8px; justify-content: space-between;">
+                        <button class="cyber-btn" onclick="triggerDemoScene('morning_rush')" style="font-size: 0.65rem; padding: 6px 8px;">Peak Hour</button>
+                        <button class="cyber-btn" onclick="triggerDemoScene('rainy_storm')" style="font-size: 0.65rem; padding: 6px 8px;">Heavy Rain</button>
+                        <button class="cyber-btn" onclick="triggerDemoScene('night_ops')" style="font-size: 0.65rem; padding: 6px 8px;">Night Ops</button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 2. Manual Controls Override and Sirens -->
+            <div class="cyber-card" style="margin-bottom: 24px;">
+                <div class="cyber-card-header">
+                    <h2 class="cyber-card-title"><i class="fa-solid fa-sliders"></i> Tactical Controller Hub</h2>
+                    <span class="badge-neon red" id="sys-mode-badge">Auto</span>
+                </div>
+                <div class="cyber-card-body">
+                    
+                    <div class="hud-header">SYSTEM CYCLING MODE</div>
+                    <div class="lane-controls-row">
+                        <button class="cyber-btn active" id="btn-mode-auto">Autonomous Smart</button>
+                        <button class="cyber-btn" id="btn-mode-manual">Admin Manual</button>
+                    </div>
+
+                    <div class="hud-header">MANUAL SIGNAL SELECTOR (FORCE GREEN)</div>
+                    <div class="lane-controls-row" style="margin-bottom: 20px;">
+                        <button class="cyber-btn" id="btn-man-1" style="font-size: 0.7rem; padding: 8px;">L1</button>
+                        <button class="cyber-btn" id="btn-man-2" style="font-size: 0.7rem; padding: 8px;">L2</button>
+                        <button class="cyber-btn" id="btn-man-3" style="font-size: 0.7rem; padding: 8px;">L3</button>
+                        <button class="cyber-btn" id="btn-man-4" style="font-size: 0.7rem; padding: 8px;">L4</button>
+                    </div>
+
+                    <div class="hud-header" style="color: var(--neon-red);"><i class="fa-solid fa-circle-exclamation"></i> EMERGENCY VEHICLE PRIORITY BYPASS</div>
+                    <div class="lane-controls-row">
+                        <button class="cyber-btn red-btn" id="btn-em-1" style="font-size: 0.7rem; padding: 8px;">North</button>
+                        <button class="cyber-btn red-btn" id="btn-em-2" style="font-size: 0.7rem; padding: 8px;">South</button>
+                        <button class="cyber-btn red-btn" id="btn-em-3" style="font-size: 0.7rem; padding: 8px;">East</button>
+                        <button class="cyber-btn red-btn" id="btn-em-4" style="font-size: 0.7rem; padding: 8px;">West</button>
+                    </div>
+
+                    <div style="margin-top: 16px; display: flex; gap: 8px;">
+                        <button class="cyber-btn red-btn" id="btn-simulate-accident" style="flex: 2; font-size: 0.75rem;"><i class="fa-solid fa-triangle-exclamation"></i> Simulate Accident</button>
+                        <button class="cyber-btn" id="btn-night-toggle" style="flex: 1; font-size: 0.75rem;"><i class="fa-solid fa-moon"></i> Night Mode</button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 3. Machine Learning Prediction Dashboard -->
+            <div class="cyber-card" style="margin-bottom: 24px;">
+                <div class="cyber-card-header">
+                    <h2 class="cyber-card-title"><i class="fa-solid fa-brain"></i> AI Traffic Congestion Predictor</h2>
+                    <span class="badge-neon purple">Predictive ML</span>
+                </div>
+                <div class="cyber-card-body">
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                        <div style="flex: 1;">
+                            <label class="hud-header" for="predict-hour-select" style="display: block; margin-bottom: 4px;">Select Hour</label>
+                            <select id="predict-hour-select" style="width: 100%; background: #0c0714; border: 1px solid var(--border-neon); color: #fff; padding: 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85rem;">
+                                <option value="8">08:00 AM (Peak)</option>
+                                <option value="12">12:00 PM (Midday)</option>
+                                <option value="17" selected>05:00 PM (Peak)</option>
+                                <option value="23">11:00 PM (Night)</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label class="hud-header" for="predict-weather-select" style="display: block; margin-bottom: 4px;">Weather</label>
+                            <select id="predict-weather-select" style="width: 100%; background: #0c0714; border: 1px solid var(--border-neon); color: #fff; padding: 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85rem;">
+                                <option value="0">Clear Sky</option>
+                                <option value="1" selected>Heavy Rain</option>
+                                <option value="2">Dense Fog</option>
+                                <option value="3">Stormy</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button class="cyber-btn" id="btn-query-ml" style="width: 100%; margin-bottom: 16px;"><i class="fa-solid fa-microchip"></i> Execute ML Regression Model</button>
+
+                    <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(157,0,255,0.15); border-radius: 6px; padding: 12px;">
+                        <div class="hud-value-row">
+                            <span class="hud-label">Predicted Traffic Density:</span>
+                            <span class="hud-val" id="ml-pred-density" style="font-weight: bold; color: var(--neon-cyan);">00%</span>
+                        </div>
+                        <div class="hud-value-row" style="margin-top: 6px;">
+                            <span class="hud-label">Predicted Congestion Score:</span>
+                            <span class="hud-val" id="ml-pred-index" style="font-weight: bold; color: var(--neon-magenta);">0.00</span>
+                        </div>
+                        <div class="hud-value-row" style="margin-top: 6px; align-items: center;">
+                            <span class="hud-label">Calculated Traffic Level:</span>
+                            <span class="badge-neon red" id="ml-pred-category" style="font-size: 0.7rem; padding: 2px 6px;">HIGH</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 4. Simulated IoT & Firebase db terminal logs -->
+            <div class="cyber-card">
+                <div class="cyber-card-header">
+                    <h2 class="cyber-card-title"><i class="fa-solid fa-terminal"></i> Live Cloud Database Log Stream</h2>
+                    <span class="badge-neon green">Telemetries</span>
+                </div>
+                <div class="cyber-card-body" style="padding: 12px;">
+                    
+                    <!-- Simulated Blynk / App Inventor Virtual HUD -->
+                    <div class="virtual-hud-panel" style="margin-bottom: 12px; margin-top: 0;">
+                        <div class="hud-panel-half">
+                            <div class="hud-header">BLYNK IoT CONTROLLER <i class="fa-solid fa-wifi"></i></div>
+                            <div class="hud-value-row"><span class="hud-label">V1 (Avg Density)</span><span class="hud-val" style="color: var(--neon-cyan);">V-Pin Out</span></div>
+                            <div class="hud-value-row"><span class="hud-label">V10 (Manual Override)</span><span class="hud-val" style="color: var(--neon-yellow);">V-Pin In</span></div>
+                        </div>
+                        <div class="hud-panel-half">
+                            <div class="hud-header">MIT APP MOBILE HUB <i class="fa-solid fa-mobile-screen"></i></div>
+                            <div class="hud-value-row"><span class="hud-label">Poll Status</span><span class="hud-val" style="color: var(--neon-green);">API/JSON</span></div>
+                            <div class="hud-value-row"><span class="hud-label">Bypass Overrides</span><span class="hud-val" style="color: var(--neon-magenta);">Web POST</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Database terminal screen -->
+                    <div class="terminal-console" id="firebase-terminal">
+                        <div class="terminal-line"><span class="terminal-time">[12:00:00 AM]</span> <span class="terminal-tag">SYSTEM</span> <span class="terminal-payload">Smart Traffic Database simulation terminal online...</span></div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Siren Accident Pop-up modal overlay -->
+    <div class="accident-modal-overlay" id="accident-modal-hud">
+        <div class="accident-modal">
+            <div class="accident-siren-ring">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="accident-modal-title">HIGHWAY SAFETY ALERT</h3>
+            <p class="accident-modal-text">Vehicle collision has been identified. Sensor telemetry reporting massive gridlock bottlenecking traffic flow.</p>
+            
+            <div class="accident-details-box">
+                <div class="accident-detail-item">
+                    <span>Accident Coordinates:</span>
+                    <span id="acc-lane-val">Lane 2 (South Intersection)</span>
+                </div>
+                <div class="accident-detail-item">
+                    <span>Time Logged:</span>
+                    <span id="acc-time-val">12:22:14 PM</span>
+                </div>
+                <div class="accident-detail-item">
+                    <span>Database Status:</span>
+                    <span style="color: var(--neon-green);">TELEMETRY REPORT CONVEYED TO CLOUD</span>
+                </div>
+            </div>
+            
+            <button class="cyber-btn red-btn" id="btn-dismiss-accident" style="width: 100%; font-size: 0.9rem; padding: 12px;"><i class="fa-solid fa-circle-check"></i> DISMISS ALERT & RESTORE LIGHT CYCLES</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (Version 8) for live connectivity -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <!-- Link to custom javascript files -->
+    <script src="firebase.js"></script>
+    <script src="script.js"></script>
+
+</body>
+</html>
